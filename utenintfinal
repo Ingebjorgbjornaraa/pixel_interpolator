@@ -1,0 +1,107 @@
+#pixel manipulator
+
+from PIL import Image
+
+original = Image.open("Akvarellorg.jpg").convert("RGB")
+width, height = original.size
+orig_pixels = original.load()   # alltid original, urørt referanse
+
+
+
+def get_tint(hour):
+    """Fargetone som legges oppå bildet avhengig av time på døgnet."""
+ 
+    if 5 <= hour <= 7:        # soloppgang
+        if hour == 5:
+            return (-60, -55, -30)
+        if hour == 6:
+            return (-35, -30, -15)
+        if hour == 7:
+            return (-10, -20, -40)
+ 
+    elif 8 <= hour < 17:    # dag
+        if hour == 8:
+            return (-5, -15, -35)
+        if hour == 9:
+            return (0, -10, -30)
+        if hour == 10:
+            return (0, -5, -25)
+        if hour == 11:
+            return (0, 0, -20)
+        if hour == 12:
+            return (0, 0, -10)
+        if hour == 13:
+            return (0, -10, -30)
+        if hour == 14:
+            return (0, -15, -40)
+        if hour == 15:
+            return (0, -20, -50)
+        if hour == 16:
+            return (0, -25, -55)
+ 
+    elif 17 <= hour <= 20:    # solnedgang
+        if hour == 17:
+            return (-5, -35, -65)
+        if hour == 18:
+            return (-10, -45, -75)
+        if hour == 19:
+            return (-15, -55, -85)
+        if hour == 20:
+            return (-25, -65, -89)
+ 
+    elif hour < 5 or hour > 20:  # natt
+        if hour == 0:
+            return (-160, -150, -50)
+        if hour == 1:
+            return (-160, -150, -80)
+        if hour == 2:
+            return (-160, -150, -100)
+        if hour == 3:
+            return (-160, -150, -50)
+        if hour == 4:
+            return (-150, -150, -50)
+        if hour == 21:
+            return (-60, -150, -100)
+        if hour == 22:
+            return (-100, -150, -50)
+        if hour == 23:
+            return (-150, -150, -20)
+ 
+    else:
+        return (0, 0, 0)       # ingen tint
+
+
+
+
+def build_tint_curve(get_tint_func):
+    hours = list(range(24))
+    r_vals = [get_tint_func(h)[0] for h in hours]
+    g_vals = [get_tint_func(h)[1] for h in hours]
+    b_vals = [get_tint_func(h)[2] for h in hours]
+
+
+    return r_vals, g_vals, b_vals
+
+
+tint_curve = build_tint_curve(get_tint)
+
+steps = 24
+for i in range(steps):
+    num = i + 1
+    r_t, g_t, b_t = get_tint(i)
+    r_t, g_t, b_t = int(r_t), int(g_t), int(b_t)
+
+    new_img = Image.new("RGB", (width, height))
+    new_pixels = new_img.load()
+
+    for x in range(width):
+        for y in range(height):
+            orig_r, orig_g, orig_b = orig_pixels[x, y]
+
+            new_r = (orig_r + r_t) % 256
+            new_g = (orig_g + g_t) % 256
+            new_b = (orig_b + b_t) % 256
+
+            new_pixels[x, y] = (new_r, new_g, new_b)
+
+    new_img.save(f"modified_intpol_{i}.jpg")
